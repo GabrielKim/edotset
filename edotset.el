@@ -3,7 +3,7 @@
 ;; Copyright (C) 2013 Doohoon Kim.
 
 ;; Original Author: Doohoon Kim(Gabriel) <invi@labex2.org>
-;; Version: 0.1
+;; Version: 0.1.2
 ;; Keywords: .emacs, dotemacs
 
 ;; edotset is free software; you can redistribute it and/or modify it
@@ -33,83 +33,67 @@
 ;; edotset version 0.1 isn't include Automatically Update function,
 ;; than version 0.2 will include it function.
 
-;; Contents of Library Packages Information
-;; 1. helm (Incremental completion and selection narrowing framework for Emacs, https://github.com/emacs-helm/helm)
-;; 2. unicad (Universal Charset Auto Detector, http://www.emacswiki.org/Unicad)
-;; 3. autopair (Useful to insert parentheses, braces, quotes and the like in matching pairs, http://www.emacswiki.org/emacs/AutoPairs)
-;; 4. magit (Emacs mode for interacting with the Git version control system, http://www.emacswiki.org/emacs/Magit)
-;; 5. yasnippet (Template system for Emacs, https://github.com/capitaomorte/yasnippet)
-;; 6-1. popup (Visual popup user interface library for Emacs (dependant at Auto-complete), https://github.com/auto-complete/popup-el)
-;; 6-2. Auto-complete (The most intelligent auto-completion extension for GNU Emacs, http://cx4a.org/software/auto-complete/)
-;; 7. ecb (Emacs Code Browser, http://ecb.sourceforge.net/)
-;; 8. Ring+ (Extensions to Ring Module, http://www.emacswiki.org/emacs/ring+.el)
-;; 9. facemenu+ (Extensions to facemenu module, http://www.emacswiki.org/emacs-en/download/facemenu%2b.el)
-;; 10. color-theme (emacs-lisp mode for skinning your emacs. http://www.nongnu.org/color-theme/#sec5)
-;; 11. SMEX (M-x enhancement for Emacs, https://github.com/nonsequitur/smex/)
+(defvar stepall-global_variables nil)
+(defvar stepall-env-global nil)
+(defvar stepall-env-local nil)
+(defvar stepall-env-version-specific nil)
 
+(defun global_variables-initialize ()
+  (load-library "global_variables")
+  
+  (add-to-list 'load-path *_def_dotemacsdotd-default*)
+  (add-to-list 'load-path
+               (concat *_def_dotemacsdotd-default* *_def_env-global*))
+  (add-to-list 'load-path
+               (concat *_def_dotemacsdotd-default* *_def_env-local*))
+  (add-to-list 'load-path
+               (concat *_def_dotemacsdotd-default* *_def_env-packages*))
+  (add-to-list 'load-path
+               (concat *_def_dotemacsdotd-default* *_def_env-version-specific*))
+  (add-to-list 'load-path
+               (concat *_def_dotemacsdotd-default* *_def_env-os-specific*)))
 
-(add-to-list 'load-path "~/.emacs.d")
-(add-to-list 'load-path "~/.emacs.d/library")
+(defun edotset-load-sequence ()
+  (when (file-exists-p (concat "~/.emacs.d/" "global_variables.el"))
+    (global_variables-initialize)
+    (setq stepall-global_variables t))
+  (when (eq stepall-global_variables t)
+    (load-library "env-global-root")
+    (setq stepall-env-global t))
+  (when (eq stepall-env-global t)
+    (load-library "env-local-root")
+    (setq stepall-env-local t))
+  (when (eq stepall-env-local t)
+   ; (load-library "env-version-specific")
+    (setq stepall-env-version-specific t))
+  (when (eq stepall-env-version-specific t)
+    ;; 임시로 패키지를 쓰기 위해 만들어 놓음. 추후 삭제.
+    (load-library "packages")))
 
-;; type check. OSX와 Windows, Linux를 Chack한다.
-;(cond
-; ((eq system-type 'darwin) (load-library "type-osx"))
-; ((eq system-type 'windows-nt) (load-library "type-windows"))
-; ((eq system-type 'gnu/linux) (load-library "type-gnu_linux")))
+(defun edotset-type-select ()
+  (cond
+   ;; OSX는 알아서 한다.
+   ((eq system-type 'darwin) (load-library "emacs-type-osx"))
+   ;; windows에서는 cygwin을 설치하여 사용한다.
+   ((eq system-type 'windows-nt) (load-library "emacs-type-windows"))
+   ;; cygwin 내부에서 돌아가는 emacs에 대한 설정. 이놈도 windows와 비슷할 것으로 예상한다.
+   ((eq system-type 'cygwin) (load-library "emacs-type-cygwin"))
+   ;; linux/Unix는 각각의 설정을 OSX와 비슷하게 처리한다. 하지만, 보안쪽에 치중하여 기능/명령어를 만든다.
+   ((eq system-type 'gnu/linux) (load-library "emacs-type-gnu_linux"))
+   ((eq system-type 'gnu/kfreebsd) (load-library "emacs-type-gnu_kfreebsd"))
+   ;; 아마 이놈은 kfreebsd와 비슷하지 않을까? 64bit에서 동작하는 프로그램들에 대한 설정 빼면?
+   ((eq system-type 'berkeley-unix) (load-library "emacs-type-berkeley_unix"))))
 
-;; 가장 중요한 함수들.
-(load-library "emacs-env-MustHave")
-(load-library "emacs-env-UtilityFunc")
+(defun edotset-initialize ()
+  "initialization to edotset"
+  (edotset-load-sequence)
+  (edotset-type-select)
 
-;; 1. emacs를 사용할 전체 환경 load 영역.
+  ;; (2) 외부 프로그램 환경 설정.
+  ;; cygwin에 대한 설정(for windows System).
+  ;(load-mylib "emacs-env-cygwin")
 
-;; (1) emacs Key Binding 및 환경 설정 영역.
+  ;; 3. 모든 설정이 Load된 이후에 최종 설정.
+  (load-library "emacs-env-MyOptions"))
 
-;; emacs 전체 기능 및 UI 환경 설정.
-(load-mylib "emacs-env-master")
-;; display에 대한 설정.
-(load-mylib "emacs-env-disp")
-;; search
-(load-mylib "emacs-env-search")
-;; file Explorer
-(load-mylib "emacs-env-fileExplorer")
-;; moving
-(load-mylib "emacs-env-moveregion")
-;; grep 설정
-(load-mylib "emacs-env-grep")
-;; ibuffer
-(load-mylib "emacs-env-ibuffer")
-;; ido
-(load-mylib "emacs-env-ido")
-
-;; (2) 외부 프로그램 환경 설정.
-
-;; cygwin에 대한 설정(for windows System).
-;(load-mylib "emacs-env-cygwin")
-
-;; 2. library 영역.
-
-;; (1) helm 설정.
-(load-mylib "emacs-env-helm")
-;; (2) unicad 설정.
-(load-mylib "emacs-env-unicad")
-;; (3) autopair 설정.
-(load-mylib "emacs-env-autopair")
-;; (4) magit 설정.
-(load-mylib "emacs-env-magit")
-;; (5) yasnippet 설정.
-(load-mylib "emacs-env-yasnippet")
-;; (6-1) popup-el 설정(independant for autocomplete module).
-(load-mylib "emacs-env-popup-el")
-;; (6-2) autocomplete 설정.
-(load-mylib "emacs-env-autocomplete")
-;; (7) ECB 설정.
-(load-mylib "emacs-env-ecb")
-;; (8) Ring+ 설정.
-;(load-mylib "emacs-env-ring+")
-;; (9) facemenu+ 설정.
-;(load-mylib "emacs-env-facemenu+")
-;; (10) Color Theme 설정.
-(load-mylib "emacs-env-colortheme")
-;; (11) SMEX 설정(require IDO).
-(load-mylib "emacs-env-SMEX")
+(provide 'edotset)
